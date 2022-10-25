@@ -16,12 +16,12 @@ class Book {
         return arr;
     }
 
-    clearInstance(id, title) {
-        document.getElementById(id).innerHTML = "";
-        localStorage.removeItem(title);
+    clearInstance(item) {
+        arr.pop(item);
     }
 
-    displayBook(val, filter) {
+    displayBook(val, filter, save) {
+        if (save) localStorage.setItem("book", JSON.stringify(val));
         document.getElementById("incompleteBookshelfList").innerHTML = "";
         document.getElementById("completeBookshelfList").innerHTML = "";
         let to = document.getElementById("incompleteBookshelfList");
@@ -36,7 +36,7 @@ class Book {
                 map(function (item) {
                     return item;
                 });
-            b.displayBook(newVal, "");
+            b.displayBook(newVal, "", true);
         }
         else {
             for (var i = 0; i < val.length; i++) {
@@ -57,11 +57,10 @@ class Book {
                     + val[i].year + "</p>" + "<button class='green' onclick='moveTo(this)'>" + status + "</button>" +
                     "<button  onclick='pop(this)' class='red'>Hapus Buku</button>" +
                     "<button  onclick='edit(this)' class='orgred'>Edit Buku</button></div>";
-                localStorage.setItem(val[i].title, html);
+
                 tabel.innerHTML = html;
                 to.appendChild(tabel);
             }
-            console.log(to);
         }
     };
     checkChecked(ch) {
@@ -81,10 +80,10 @@ class Book {
         var instance2 = new SudahBaca();
         if (ch == true) {
             instance2.addInstance({ id: new Date().getTime(), title: title, author: author, year: year, isComplete: isComplete })
-            instance2.displayBook(instance2.getInstance(), "");
+            instance2.displayBook(instance2.getInstance(), "", true);
         } else {
             instance1.addInstance({ id: new Date().getTime(), title: title, author: author, year: year, isComplete: isComplete });
-            instance2.displayBook(instance1.getInstance(), "");
+            instance2.displayBook(instance1.getInstance(), "", true);
         }
     }
 
@@ -96,7 +95,7 @@ class Book {
             if (b.getInstance() != null) { b.displayBook(b.getInstance(), "") };
         }
         else {
-            b.displayBook(arr, title);
+            b.displayBook(arr, title, false);
         }
     }
     editBuku() {
@@ -116,7 +115,19 @@ class Book {
             });
 
         console.log(newVal);
-        b.displayBook(newVal, "");
+        b.displayBook(newVal, "", true);
+    }
+    loadBuku() {
+        const b = new Book();
+        //check if localstorage is exists or not
+        if (localStorage.length != 0) {
+
+            JSON.parse(localStorage.getItem("book")).forEach(element => {
+                b.addInstance(element);
+            });
+            console.log(b.getInstance());
+            b.displayBook(JSON.parse(localStorage.getItem("book")), "", false);
+        }
     }
 }
 
@@ -146,17 +157,22 @@ document.onchange = function () {
     chck.addEventListener("click", b.checkChecked(chck.checked));
 }
 
-const b = new Book();
-document.getElementById('inputBook').addEventListener('submit', b.submitForm);
-document.getElementById('searchBook').addEventListener('submit', b.cariBuku);
+window.onload = function () {
+    const b = new Book();
+    b.loadBuku();
+    document.getElementById('inputBook').addEventListener('submit', b.submitForm);
+    document.getElementById('searchBook').addEventListener('submit', b.cariBuku);
+    document.getElementById('confirm').addEventListener('click', b.editBuku);
+}
+
 
 const pop = function (btn) {
     const b = new Book();
     var id = btn.parentNode.parentElement.id;
     var arr = b.getInstance();
     var idx = arr.findIndex((el => el.id == id));
-    arr.splice(idx, 1);
-    b.displayBook(arr, "");
+    b.clearInstance(arr[idx]);
+    b.displayBook(arr, "", true);
 }
 
 function moveTo(btn) {
@@ -165,7 +181,7 @@ function moveTo(btn) {
     var arr = b.getInstance();
     var idx = arr.findIndex((el => el.id == id));
     arr[idx].isComplete = !arr[idx].isComplete;
-    b.displayBook(arr, "");
+    b.displayBook(arr, "", true);
 }
 
 function edit(btn) {
